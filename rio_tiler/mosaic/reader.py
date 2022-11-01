@@ -1,6 +1,9 @@
 """rio_tiler.mosaic: create tile from multiple assets."""
 
 from inspect import isclass
+from pipes import Template
+from tempfile import TemporaryDirectory
+import numpy
 from typing import Any, Callable, List, Optional, Sequence, Tuple, Type, Union, cast
 
 from rasterio.crs import CRS
@@ -23,6 +26,7 @@ def mosaic_reader(
     chunk_size: Optional[int] = None,
     threads: int = MAX_THREADS,
     allowed_exceptions: Tuple = (TileOutsideBounds,),
+    rgb: list = [],
     **kwargs,
 ) -> Tuple[ImageData, List]:
     """Merge multiple assets.
@@ -57,60 +61,81 @@ def mosaic_reader(
 
 
     """
-    if isclass(pixel_selection):
-        pixel_selection = cast(Type[MosaicMethodBase], pixel_selection)
 
-        if issubclass(pixel_selection, MosaicMethodBase):
-            pixel_selection = pixel_selection()
+    data = numpy.zeros((3,256,256))
+    mosaic_assetsNew = mosaic_assets
+    
+    # Read false color bands from differernt files. 
+    # Original only read bands from one file.
+    # Here read three bands from different files.
+    for band in range(3):
 
-    if not isinstance(pixel_selection, MosaicMethodBase):
-        raise InvalidMosaicMethod(
-            "Mosaic filling algorithm should be an instance of "
-            "'rio_tiler.mosaic.methods.base.MosaicMethodBase'"
-        )
+        pixel_selection: Union[Type[MosaicMethodBase], MosaicMethodBase] = FirstMethod
+        mosaic_assetsNew = [None] * len(mosaic_assets)
+        for i in range(len(mosaic_assets)):
+            ttt = mosaic_assets[i]
+            # Send band B01 to represent all bands instead of send all bands. Replace B01 with user specified RGB bands.
+            mosaic_assetsNew[i] = ttt.replace("B01",rgb[band])
 
-    if not chunk_size:
-        chunk_size = threads if threads > 1 else len(mosaic_assets)
+        if isclass(pixel_selection):
+            pixel_selection = cast(Type[MosaicMethodBase], pixel_selection)
 
-    assets_used: List = []
-    crs: Optional[CRS]
-    bounds: Optional[BBox]
-    band_names: List[str]
+            if issubclass(pixel_selection, MosaicMethodBase):
+                pixel_selection = pixel_selection()
 
-    for chunks in _chunks(mosaic_assets, chunk_size):
-        tasks = create_tasks(reader, chunks, threads, *args, **kwargs)
-        for img, asset in filter_tasks(
-            tasks,
-            allowed_exceptions=allowed_exceptions,
-        ):
-            if isinstance(img, tuple):
-                img = ImageData(*img)
-
-            crs = img.crs
-            bounds = img.bounds
-            band_names = img.band_names
-
-            assets_used.append(asset)
-            pixel_selection.feed(img.as_masked())
-
-            if pixel_selection.is_done:
-                data, mask = pixel_selection.data
-                return (
-                    ImageData(
-                        data,
-                        mask,
-                        assets=assets_used,
-                        crs=crs,
-                        bounds=bounds,
-                        band_names=band_names,
-                    ),
-                    assets_used,
+        if not isinstance(pixel_selection, MosaicMethodBase):
+            raise InvalidMosaicMethod(
+                "Mosaic filling algorithm should be an instance of "
+                "'rio_tiler.mosaic.methods.base.MosaicMethodBase'"
                 )
 
-    data, mask = pixel_selection.data
-    if data is None:
-        raise EmptyMosaicError("Method returned an empty array")
+        if not chunk_size:
+            chunk_size = threads if threads > 1 else len(mosaic_assetsNew)
 
+        assets_used: List = []
+        crs: Optional[CRS]
+        bounds: Optional[BBox]
+        band_names: List[str]
+
+        for chunks in _chunks(mosaic_assetsNew, chunk_size):
+
+            tasks = create_tasks(reader, chunks, threads, *args, **kwargs) # task.py
+
+            for img, asset in filter_tasks(
+                tasks,
+                allowed_exceptions=allowed_exceptions,
+            ):
+                if isinstance(img, tuple):
+                    img = ImageData(*img)
+
+                crs = img.crs
+                bounds = img.bounds
+                band_names = img.band_names
+
+                assets_used.append(asset)
+          
+                pixel_selection.feed(img.as_masked())
+
+                if pixel_selection.is_done:
+                    data[band], mask = pixel_selection.data
+                    return (
+                        ImageData(
+                            data[band],
+                            mask,
+                            assets=assets_used,
+                            crs=crs,
+                            bounds=bounds,
+                            band_names=band_names,
+                        ),
+                        assets_used,
+                    )
+
+        data[band], mask = pixel_selection.data
+        if data[band] is None:
+            raise EmptyMosaicError("Method returned an empty array")
+    
+    band_names = rgb
+    
     return (
         ImageData(
             data,

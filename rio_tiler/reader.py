@@ -3,7 +3,7 @@
 import contextlib
 import math
 import warnings
-from typing import Callable, Dict, Optional, Tuple, TypedDict, Union
+from typing import Any, Callable, Dict, Optional, Tuple, TypedDict, Union
 
 import numpy
 from affine import Affine
@@ -91,6 +91,7 @@ def read(
     post_process: Optional[
         Callable[[numpy.ndarray, numpy.ndarray], DataMaskType]
     ] = None,
+    **kwargs: Any,
 ) -> ImageData:
     """Low level read function.
 
@@ -262,6 +263,7 @@ def part(
     post_process: Optional[
         Callable[[numpy.ndarray, numpy.ndarray], DataMaskType]
     ] = None,
+    **kwargs: Any,
 ) -> ImageData:
     """Read part of a dataset.
 
@@ -376,6 +378,7 @@ def part(
             force_binary_mask=force_binary_mask,
             unscale=unscale,
             post_process=post_process,
+            **kwargs,
         )
 
     # else no re-projection needed
@@ -407,6 +410,7 @@ def part(
             force_binary_mask=force_binary_mask,
             unscale=unscale,
             post_process=post_process,
+            **kwargs,
         )
         return ImageData(
             data=img.data[:, padding:-padding, padding:-padding],
@@ -427,6 +431,7 @@ def part(
         force_binary_mask=force_binary_mask,
         unscale=unscale,
         post_process=post_process,
+        **kwargs,
     )
 
 
@@ -508,6 +513,7 @@ def point(
             force_binary_mask=force_binary_mask,
             unscale=unscale,
             post_process=post_process,
+            **kwargs,
         )
 
     return PointData(

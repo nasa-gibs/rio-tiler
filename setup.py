@@ -35,6 +35,6 @@ setup(
         "pystac>=0.5.4",
         "rasterio>=1.3.0",
         "rio-color",
-        "importlib_resources>=1.1.0; python_version < '3.9'",
+        "importlib_resources>=1.1.0; python_version > '3.9'",
     ],
 )
