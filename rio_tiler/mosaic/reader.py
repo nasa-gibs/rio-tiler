@@ -116,19 +116,20 @@ def mosaic_reader(
           
                 pixel_selection.feed(img.as_masked())
 
-                if pixel_selection.is_done:
-                    data[band], mask = pixel_selection.data
-                    return (
-                        ImageData(
-                            data[band],
-                            mask,
-                            assets=assets_used,
-                            crs=crs,
-                            bounds=bounds,
-                            band_names=band_names,
-                        ),
-                        assets_used,
-                    )
+                # It is two dimentions. Should be three dimentions.
+                # if pixel_selection.is_done:
+                #     data[band], mask = pixel_selection.data
+                #     return (
+                #         ImageData(
+                #             data,
+                #             mask,
+                #             assets=assets_used,
+                #             crs=crs,
+                #             bounds=bounds,
+                #             band_names=band_names,
+                #         ),
+                #         assets_used,
+                #     )
 
         data[band], mask = pixel_selection.data
         if data[band] is None:

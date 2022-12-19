@@ -3,7 +3,7 @@
 import contextlib
 import math
 import warnings
-from typing import Any, Callable, Dict, Optional, Tuple, TypedDict, Union
+from typing import Callable, Dict, Optional, Tuple, TypedDict, Union
 
 import numpy
 from affine import Affine
@@ -91,7 +91,7 @@ def read(
     post_process: Optional[
         Callable[[numpy.ndarray, numpy.ndarray], DataMaskType]
     ] = None,
-    **kwargs: Any,
+    **kwargs,
 ) -> ImageData:
     """Low level read function.
 
@@ -263,7 +263,7 @@ def part(
     post_process: Optional[
         Callable[[numpy.ndarray, numpy.ndarray], DataMaskType]
     ] = None,
-    **kwargs: Any,
+    **kwargs,
 ) -> ImageData:
     """Read part of a dataset.
 
@@ -448,6 +448,7 @@ def point(
     post_process: Optional[
         Callable[[numpy.ndarray, numpy.ndarray], DataMaskType]
     ] = None,
+    **kwargs,
 ) -> PointData:
     """Read a pixel value for a point.
 
